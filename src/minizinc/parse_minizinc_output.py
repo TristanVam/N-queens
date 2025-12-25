@@ -1,9 +1,4 @@
-"""Parser for MiniZinc output produced by the N-Queens models.
-
-MiniZinc may print multiple solutions separated by "----------" and a final
-"==========". The parser keeps the last non-empty solution block by default to
-match standard satisfaction search behavior.
-"""
+"""Parse MiniZinc output, keeping the last solution block."""
 from __future__ import annotations
 
 import re
@@ -27,11 +22,7 @@ def _extract_last_block(raw_output: str) -> str:
 
 
 def parse_positions(raw_output: str) -> List[Tuple[int, int]]:
-    """Extract a list of ``(row, col)`` tuples from MiniZinc output.
-
-    The parser targets the last solution block and raises a clear error if the
-    expected ``positions=[(r,c), ...]`` pattern is missing.
-    """
+    """Extract ``(row, col)`` pairs from the final MiniZinc solution block."""
     block = _extract_last_block(raw_output)
     match = POSITION_PATTERN.search(block)
     if not match:
@@ -49,6 +40,3 @@ def parse_positions(raw_output: str) -> List[Tuple[int, int]]:
     if not positions:
         raise ValueError("No coordinate pairs parsed from MiniZinc output")
     return positions
-
-
-__all__ = ["parse_positions"]

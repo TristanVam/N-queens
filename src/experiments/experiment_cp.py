@@ -1,4 +1,4 @@
-"""Automated experiments for the MiniZinc CP models."""
+"""Run MiniZinc CP experiments and capture per-run rows."""
 from __future__ import annotations
 
 from datetime import datetime

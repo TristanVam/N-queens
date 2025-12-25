@@ -1,18 +1,10 @@
-"""Lightweight logging configuration helpers."""
+"""Minimal logging setup for the project."""
 import logging
 from typing import Optional
 
 
 def setup_logging(name: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
-    """Configure and return a logger with a standard format.
-
-    Parameters
-    ----------
-    name:
-        Optional logger name. Defaults to root logger.
-    level:
-        Logging level, defaults to INFO.
-    """
+    """Configure and return a logger with a standard format."""
     logger = logging.getLogger(name)
     if not logger.handlers:
         handler = logging.StreamHandler()

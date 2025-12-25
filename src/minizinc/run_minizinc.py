@@ -1,4 +1,4 @@
-"""Utility to invoke MiniZinc models from Python with robust status parsing."""
+"""Run MiniZinc models from Python and capture status/runtime."""
 from __future__ import annotations
 
 import shlex
@@ -46,17 +46,7 @@ def _detect_status(stdout: str, returncode: int) -> str:
 
 
 def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> MiniZincResult:
-    """Run a MiniZinc model via the command line interface.
-
-    Parameters
-    ----------
-    model_path:
-        Path to the `.mzn` model file.
-    params:
-        Dictionary of MiniZinc parameters (currently expects integers only).
-    timeout:
-        Wall-clock timeout in seconds.
-    """
+    """Execute a MiniZinc model with parameters and a timeout."""
     cmd = [MINIZINC_BINARY, model_path]
     cmd.extend(_format_params(params))
     logger.debug("Executing MiniZinc: %s", " ".join(shlex.quote(x) for x in cmd))
@@ -91,6 +81,3 @@ def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> 
         logger.error("MiniZinc returned non-zero exit code %s", proc.returncode)
 
     return MiniZincResult(status=status, runtime=runtime, stdout=stdout or "", stderr=stderr or "")
-
-
-__all__ = ["MiniZincResult", "run_minizinc"]
