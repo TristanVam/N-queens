@@ -15,6 +15,22 @@ def _has_duplicates(values: Iterable[int]) -> bool:
     return any(count > 1 for count in counter.values())
 
 
+def _summary_from_flags(
+    wrong_count: bool, out_of_bounds: bool, row_dup: bool, col_dup: bool, diag_dup: bool
+) -> str:
+    if wrong_count:
+        return "wrong_count"
+    if out_of_bounds:
+        return "format_error"
+    if row_dup:
+        return "row_conflict"
+    if col_dup:
+        return "col_conflict"
+    if diag_dup:
+        return "diag_conflict"
+    return "ok"
+
+
 def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, object]:
     """Validate an N-Queens placement.
 
@@ -22,6 +38,7 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
     - ``valid``: boolean
     - ``violations``: list of strings describing conflicts
     - ``counts``: diagnostic counters
+    - ``reason_summary``: concise status tag for logging/CSV export
     """
     if n <= 0:
         raise ValidationError("Board size must be positive")
@@ -32,15 +49,21 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
     diag1 = [r + c for r, c in positions]
     diag2 = [r - c for r, c in positions]
 
-    if len(positions) != n:
+    wrong_count = len(positions) != n
+    out_of_bounds = any(r < 1 or r > n or c < 1 or c > n for r, c in positions)
+    row_dup = _has_duplicates(rows)
+    col_dup = _has_duplicates(cols)
+    diag_dup = _has_duplicates(diag1) or _has_duplicates(diag2)
+
+    if wrong_count:
         violations.append(f"Expected {n} queens, found {len(positions)}")
 
-    if any(r < 1 or r > n or c < 1 or c > n for r, c in positions):
+    if out_of_bounds:
         violations.append("Coordinates out of bounds")
 
-    if _has_duplicates(rows):
+    if row_dup:
         violations.append("Row conflict detected")
-    if _has_duplicates(cols):
+    if col_dup:
         violations.append("Column conflict detected")
     if _has_duplicates(diag1):
         violations.append("Positive diagonal conflict detected")
@@ -48,6 +71,7 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
         violations.append("Negative diagonal conflict detected")
 
     valid = len(violations) == 0
+    reason_summary = _summary_from_flags(wrong_count, out_of_bounds, row_dup, col_dup, diag_dup)
     return {
         "valid": valid,
         "violations": violations,
@@ -57,6 +81,7 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
             "diag1": Counter(diag1),
             "diag2": Counter(diag2),
         },
+        "reason_summary": reason_summary,
     }
 
 

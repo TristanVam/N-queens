@@ -1,4 +1,4 @@
-"""Utility to invoke MiniZinc models from Python."""
+"""Utility to invoke MiniZinc models from Python with robust status parsing."""
 from __future__ import annotations
 
 import shlex
@@ -34,6 +34,17 @@ def _format_params(params: Dict[str, int]) -> List[str]:
     return cmd_params
 
 
+def _detect_status(stdout: str, returncode: int) -> str:
+    text = stdout.lower()
+    if "unsatisfiable" in text:
+        return "UNSAT"
+    if "satisfiable" in text or "positions=" in text:
+        return "SAT"
+    if returncode == 0:
+        return "SAT"
+    return "ERROR"
+
+
 def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> MiniZincResult:
     """Run a MiniZinc model via the command line interface.
 
@@ -52,31 +63,34 @@ def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> 
 
     start = time.perf_counter()
     try:
-        proc = subprocess.run(
+        proc = subprocess.Popen(
             cmd,
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            timeout=timeout,
-            check=False,
         )
-        runtime = time.perf_counter() - start
-    except subprocess.TimeoutExpired as exc:
-        runtime = time.perf_counter() - start
-        logger.warning("MiniZinc timeout after %.3fs", runtime)
-        return MiniZincResult(status="TIMEOUT", runtime=runtime, stdout=exc.stdout or "", stderr=exc.stderr or "")
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+            runtime = time.perf_counter() - start
+            logger.warning("MiniZinc timeout after %.3fs", runtime)
+            return MiniZincResult(
+                status="TIMEOUT", runtime=runtime, stdout=stdout or "", stderr=stderr or ""
+            )
     except FileNotFoundError as exc:
         runtime = time.perf_counter() - start
         message = f"MiniZinc binary not found: {exc}"
         logger.error(message)
         return MiniZincResult(status="ERROR", runtime=runtime, stdout="", stderr=message)
 
-    if proc.returncode == 0:
-        status = "SAT"
-    else:
-        status = "ERROR"
+    runtime = time.perf_counter() - start
+    status = _detect_status(stdout or "", proc.returncode)
+    if proc.returncode != 0 and status == "ERROR":
         logger.error("MiniZinc returned non-zero exit code %s", proc.returncode)
 
-    return MiniZincResult(status=status, runtime=runtime, stdout=proc.stdout, stderr=proc.stderr)
+    return MiniZincResult(status=status, runtime=runtime, stdout=stdout or "", stderr=stderr or "")
 
 
 __all__ = ["MiniZincResult", "run_minizinc"]

@@ -1,4 +1,15 @@
-"""QUBO model builders for the N-Queens problem using Fixstars Amplify."""
+"""QUBO model builders for the N-Queens problem using Fixstars Amplify.
+
+The formulation mirrors the Boolean PB grid: one binary variable per cell
+``x[r,c]`` taking value 1 when a queen is placed there. Constraints are added as
+quadratic penalties (no higher-order terms):
+
+- Rows: equality (exactly one queen per row).
+- Columns: equality. Because rows enforce N total queens, ``<= 1`` per column is
+  equivalent to ``= 1`` (pigeonhole principle), so we use ``= 1`` to simplify
+  the penalty expression.
+- Diagonals: pairwise ``<= 1`` conflicts.
+"""
 from __future__ import annotations
 
 from typing import Dict, List, Tuple
@@ -26,20 +37,21 @@ def build_qubo(
 ) -> Tuple[BinaryQuadraticModel, List[Tuple[int, int]], list]:
     """Construct a BinaryQuadraticModel for the N-Queens problem.
 
-    Penalties use the standard quadratic formulation for equality and at-most-one
-    constraints.
+    Variables ``x[i]`` correspond to the flattened grid of ``x[r,c]``. All
+    constraints are encoded as quadratic penalties scaled by the provided
+    ``penalties`` dictionary.
     """
     idx_to_coord, coord_to_idx = generate_mapping(n)
     x = gen_symbols(BinaryQuadraticModelBuilder, n * n)
     bqm = BinaryQuadraticModel()
 
-    # Row constraints: (sum - 1)^2
+    # Row constraints: (sum - 1)^2 to enforce exactly one queen per row
     row_penalty = penalties.get("row", 1.0)
     for r in range(n):
         row_indices = [coord_to_idx[(r + 1, c + 1)] for c in range(n)]
         _add_equality_penalty(bqm, x, row_indices, row_penalty)
 
-    # Column constraints
+    # Column constraints: equality is equivalent to <= 1 because total queens = N
     col_penalty = penalties.get("col", 1.0)
     for c in range(n):
         col_indices = [coord_to_idx[(r + 1, c + 1)] for r in range(n)]

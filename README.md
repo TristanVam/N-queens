@@ -1,16 +1,13 @@
-# N-Queens Comparative Study (CP & QUBO)
+# N-Queens Course Project: CP vs QUBO
 
-This repository implements an experimental pipeline for the N-Queens problem using only the methods covered in the accompanying course: MiniZinc-based constraint programming (integer + `alldifferent`, Boolean + pseudo-Boolean constraints) and a quadratic unconstrained binary optimization (QUBO) formulation solved with the Fixstars Amplify annealing engine. The code is fully reproducible and organized for direct submission as a programming project.
+This repository accompanies a university-style project that compares three N-Queens models built with course material only: two MiniZinc encodings (classic `alldifferent` over integers and a Boolean pseudo-Boolean variant) and a quadratic unconstrained binary optimization (QUBO) solved with the Fixstars Amplify annealing engine. The code is structured for reproducible experiments and lightweight reporting rather than marketing polish.
 
-## Project goals
-
-- Provide clean MiniZinc models for two CP encodings.
-- Provide a QUBO model with configurable penalties and an annealing-based solver.
-- Offer automated experiment scripts, aggregation, and plotting utilities.
-- Validate all solutions with a consistent checker.
+## What we compare / what we measure
+- **Models**: classic CP with `alldifferent`, Boolean PB with row/column/diagonal counts, and a grid-based QUBO sent to Amplify.
+- **Metrics**: runtime, success rate (especially for the stochastic QUBO), and sensitivity to penalty weights in the QUBO formulation.
+- **Stochastic note**: QUBO runs are repeated per setting to capture variability.
 
 ## Repository structure
-
 ```
 models/                 MiniZinc models (classic integer + alldifferent, pseudo-Boolean)
 src/minizinc/           MiniZinc runners and output parser
@@ -25,55 +22,42 @@ sanity_checks.py        Quick correctness checks
 ```
 
 ## Setup
-
-1. Install MiniZinc (binary available on the PATH).
-2. Obtain a Fixstars Amplify token and export it as `AMPLIFY_TOKEN` for QUBO experiments.
+1. Install MiniZinc and ensure `minizinc` is on your PATH.
+2. (Optional for QUBO) Obtain a Fixstars Amplify token and export it as `AMPLIFY_TOKEN`.
 3. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
 ## Running experiments
-
 ### Constraint Programming (MiniZinc)
-
 ```
 python -m src.experiments.experiment_cp
 ```
-Outputs a CSV at `results/raw/cp_results.csv` with status, runtime, and validity information for each run.
+This records one row per run in `results/raw/cp_results.csv` (model, N, timeout, status, validity).
 
 ### QUBO with Amplify
-
-Ensure `AMPLIFY_TOKEN` is set before running:
 ```
 python -m src.experiments.experiment_qubo
 ```
-Results are stored in `results/raw/qubo_results.csv` and include energy, validity, and penalty configuration.
+Requires `AMPLIFY_TOKEN`. Outputs long-format rows to `results/raw/qubo_results.csv`, including penalty settings, energies, and validity for repeated runs.
 
 ### Aggregation and plotting
-
-After running experiments, aggregate and generate figures:
+After generating raw CSVs, create aggregated tables and figures:
 ```
 python -m src.analysis.aggregate_results
 python -m src.analysis.plot_results
 ```
-Aggregated tables are placed in `results/aggregated/` and plots in `results/figures/` (runtime vs N for CP, success rate vs N for QUBO, and penalty sensitivity).
+Aggregates are written to `results/aggregated/` and plots to `results/figures/` (CP runtime vs N, QUBO success rate vs N, and QUBO penalty sensitivity).
 
 ### Sanity checks
-
-Run small end-to-end checks for `N=4` and `N=8`:
+Run small checks for `N=4` and `N=8` to confirm the pipeline:
 ```
 python sanity_checks.py
 ```
-The script exercises both CP models, the validator, and (if a token is available) a QUBO run with weak penalties to illustrate stochastic behavior.
+The script exercises both CP models, the validator (including a negative case), and runs a small QUBO test only if a token is available.
 
 ## Reproducibility notes
-
-- All experiment parameters (board sizes, timeouts, penalty weights, number of runs) are centralized in `config.py` for transparency and easy modification.
-- The MiniZinc runner enforces per-call timeouts to avoid hanging runs.
-- QUBO solutions are sampled multiple times (`AMPLIFY_NUM_SAMPLES`) to capture stochastic performance; exact outcomes may vary per run.
-
-## Warnings
-
-- The QUBO annealing process is inherently stochastic. Success rates and energies may fluctuate across runs, especially with weaker penalties.
-- If MiniZinc or Amplify are not installed/configured, the corresponding scripts will log an error and skip execution.
+- Experiment parameters (board sizes, timeouts, penalty weights, number of runs) live in `config.py`. Profiles let you switch between quick debugging and fuller benchmarks.
+- MiniZinc runs enforce per-call timeouts; QUBO runs respect Amplify timeouts and sample counts.
+- QUBO solutions are validated just like CP solutions; success rates summarize how often the annealer finds a legal placement.
