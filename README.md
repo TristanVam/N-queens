@@ -38,6 +38,7 @@ sanity_checks.py        Quick correctness checks
    ```bash
    pip install -r requirements.txt
    ```
+4. Choose a profile in `config.py` (`PROFILE = "FAST_DEBUG"` or `"FULL_BENCH"`) depending on whether you want a quick smoke test or a fuller benchmark run.
 
 ## Running experiments
 
