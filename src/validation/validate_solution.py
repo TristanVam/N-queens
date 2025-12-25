@@ -22,7 +22,6 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
     - ``valid``: boolean
     - ``violations``: list of strings describing conflicts
     - ``counts``: diagnostic counters
-    - ``reason_summary``: short tag describing the main outcome
     """
     if n <= 0:
         raise ValidationError("Board size must be positive")
@@ -49,20 +48,6 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
         violations.append("Negative diagonal conflict detected")
 
     valid = len(violations) == 0
-
-    def _reason() -> str:
-        if valid:
-            return "ok"
-        if len(positions) != n:
-            return "wrong_count"
-        if _has_duplicates(rows):
-            return "row_conflict"
-        if _has_duplicates(cols):
-            return "col_conflict"
-        if _has_duplicates(diag1) or _has_duplicates(diag2):
-            return "diag_conflict"
-        return "format_error"
-
     return {
         "valid": valid,
         "violations": violations,
@@ -72,7 +57,6 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
             "diag1": Counter(diag1),
             "diag2": Counter(diag2),
         },
-        "reason_summary": _reason(),
     }
 
 

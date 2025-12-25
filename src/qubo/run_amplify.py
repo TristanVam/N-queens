@@ -17,22 +17,13 @@ from src.utils.logging_utils import setup_logging
 logger = setup_logging(__name__)
 
 
-class MissingTokenError(EnvironmentError):
-    """Raised when the Amplify token is unavailable."""
-
-
 @dataclass
 class AmplifyResult:
-    status: str
     energy: float
     positions: List[Tuple[int, int]]
     valid: bool
     runtime: float
     penalties: PenaltyConfig
-    num_candidates: int
-    best_valid_found: bool
-    reason_summary: str
-    message: str = ""
 
 
 class AmplifyRunner:
@@ -41,7 +32,7 @@ class AmplifyRunner:
     def __init__(self, token_env: str = AMPLIFY_TOKEN_ENV):
         token = os.getenv(token_env)
         if not token:
-            raise MissingTokenError(
+            raise EnvironmentError(
                 f"Amplify token not found in environment variable {token_env}."
             )
         client = FixstarsClient()
@@ -57,41 +48,16 @@ class AmplifyRunner:
         self.client.parameters.num_outputs = AMPLIFY_NUM_SAMPLES
 
         start = time.perf_counter()
-        try:
-            result = self.solver.solve(bqm)
-        except Exception as exc:  # Amplify SDK specific exceptions are broad
-            runtime = time.perf_counter() - start
-            logger.error("Amplify solver error: %s", exc)
-            return AmplifyResult(
-                status="ERROR",
-                energy=float("inf"),
-                positions=[],
-                valid=False,
-                runtime=runtime,
-                penalties=penalties,
-                num_candidates=0,
-                best_valid_found=False,
-                reason_summary="format_error",
-                message=str(exc),
-            )
+        result = self.solver.solve(bqm)
         runtime = time.perf_counter() - start
 
-        num_candidates = len(result)
-        if num_candidates == 0:
+        if len(result) == 0:
             logger.warning("Amplify returned no solutions")
             return AmplifyResult(
-                status="NO_CANDIDATE",
-                energy=float("inf"),
-                positions=[],
-                valid=False,
-                runtime=runtime,
-                penalties=penalties,
-                num_candidates=0,
-                best_valid_found=False,
-                reason_summary="format_error",
-                message="No candidates returned",
+                energy=float("inf"), positions=[], valid=False, runtime=runtime, penalties=penalties
             )
 
+        # Take the best solution
         best = result[0]
         energy = best.energy
         values: Dict = best.values
@@ -101,26 +67,13 @@ class AmplifyRunner:
                 chosen.append(coord)
 
         validation = validate_solution(chosen, n)
-        best_valid_found = bool(validation["valid"])
-        logger.info(
-            "Amplify candidates=%d best_energy=%.4f valid=%s",
-            num_candidates,
-            energy,
-            best_valid_found,
-        )
-
         return AmplifyResult(
-            status="OK",
             energy=energy,
             positions=chosen,
-            valid=best_valid_found,
+            valid=bool(validation["valid"]),
             runtime=runtime,
             penalties=penalties,
-            num_candidates=num_candidates,
-            best_valid_found=best_valid_found,
-            reason_summary=str(validation["reason_summary"]),
-            message="",
         )
 
 
-__all__ = ["AmplifyRunner", "AmplifyResult", "MissingTokenError"]
+__all__ = ["AmplifyRunner", "AmplifyResult"]

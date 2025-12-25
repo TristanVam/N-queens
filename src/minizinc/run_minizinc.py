@@ -34,19 +34,18 @@ def _format_params(params: Dict[str, int]) -> List[str]:
     return cmd_params
 
 
-def _deduce_status(stdout: str, returncode: int) -> str:
-    upper = stdout.upper()
-    if "UNSATISFIABLE" in upper:
-        return "UNSAT"
-    if "SATISFIABLE" in upper or "positions=" in stdout:
-        return "SAT"
-    if returncode != 0:
-        return "ERROR"
-    return "UNKNOWN"
-
-
 def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> MiniZincResult:
-    """Run a MiniZinc model via the command line interface with robust status parsing."""
+    """Run a MiniZinc model via the command line interface.
+
+    Parameters
+    ----------
+    model_path:
+        Path to the `.mzn` model file.
+    params:
+        Dictionary of MiniZinc parameters (currently expects integers only).
+    timeout:
+        Wall-clock timeout in seconds.
+    """
     cmd = [MINIZINC_BINARY, model_path]
     cmd.extend(_format_params(params))
     logger.debug("Executing MiniZinc: %s", " ".join(shlex.quote(x) for x in cmd))
@@ -71,8 +70,10 @@ def run_minizinc(model_path: str, params: Dict[str, int], timeout: int = 10) -> 
         logger.error(message)
         return MiniZincResult(status="ERROR", runtime=runtime, stdout="", stderr=message)
 
-    status = _deduce_status(proc.stdout, proc.returncode)
-    if status == "ERROR" and proc.returncode != 0:
+    if proc.returncode == 0:
+        status = "SAT"
+    else:
+        status = "ERROR"
         logger.error("MiniZinc returned non-zero exit code %s", proc.returncode)
 
     return MiniZincResult(status=status, runtime=runtime, stdout=proc.stdout, stderr=proc.stderr)

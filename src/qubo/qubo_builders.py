@@ -1,15 +1,4 @@
-"""QUBO model builders for the N-Queens problem using Fixstars Amplify.
-
-Modeling choices (within the course material):
-- Binary variables x[r, c] arranged on the N x N grid (1-based when decoded).
-- Constraint-to-penalty approach with only quadratic terms.
-- Rows are enforced as exactly one queen; columns use (sum - 1)^2 as well.
-  Because every row enforces exactly one queen (N queens total), requiring
-  each column to sum to 1 is equivalent to the standard "at most one" plus
-  pigeonhole reasoning and keeps penalties symmetric with the PB grid model.
-- Diagonals are enforced with pairwise quadratic penalties (at most one).
-The index mapping is kept stable for encoding/decoding solutions.
-"""
+"""QUBO model builders for the N-Queens problem using Fixstars Amplify."""
 from __future__ import annotations
 
 from typing import Dict, List, Tuple
@@ -60,7 +49,6 @@ def build_qubo(
     diag_penalty = penalties.get("diag", 1.0)
     diagonals = _collect_diagonals(n)
     for indices in diagonals:
-        # Pairwise penalties enforce at most one queen per diagonal
         _add_at_most_one_penalty(bqm, x, indices, diag_penalty)
 
     # Offset is not essential but kept for clarity
