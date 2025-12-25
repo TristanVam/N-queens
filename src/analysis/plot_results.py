@@ -26,10 +26,16 @@ def plot_cp_runtime():
         logger.warning("Aggregated CP results not found at %s", config.AGG_CP_CSV)
         return
     fig, ax = plt.subplots()
-    for model, group in df.groupby("model"):
-        ax.plot(group["N"], group["median_runtime"], marker="o", label=model)
+    for model, group in df.groupby("model_name"):
+        group_sorted = group.sort_values("N")
+        ax.plot(
+            group_sorted["N"],
+            group_sorted["runtime_median_success"],
+            marker="o",
+            label=model,
+        )
     ax.set_xlabel("Board size N")
-    ax.set_ylabel("Median runtime (s)")
+    ax.set_ylabel("Median runtime (successful runs, s)")
     ax.set_title("CP runtime vs N")
     ax.legend()
     _save(fig, "cp_runtime.png")
@@ -43,9 +49,11 @@ def plot_qubo_success():
         return
     fig, ax = plt.subplots()
     avg = df.groupby("N")["success_rate"].mean().reset_index()
-    ax.plot(avg["N"], avg["success_rate"], marker="o")
+    avg_sorted = avg.sort_values("N")
+    ax.plot(avg_sorted["N"], avg_sorted["success_rate"], marker="o", color="steelblue")
     ax.set_xlabel("Board size N")
     ax.set_ylabel("Mean success rate")
+    ax.set_ylim(0, 1.05)
     ax.set_title("QUBO success rate vs N")
     _save(fig, "qubo_success_rate.png")
 
@@ -57,13 +65,19 @@ def plot_penalty_sensitivity():
         logger.warning("Aggregated QUBO results not found at %s", config.AGG_QUBO_CSV)
         return
     fig, ax = plt.subplots()
-    df_sorted = df.sort_values("success_rate", ascending=False)
-    labels = [f"r{r}/c{c}/d{d}" for r, c, d in zip(df_sorted["penalty_row"], df_sorted["penalty_col"], df_sorted["penalty_diag"])]
-    ax.bar(range(len(df_sorted)), df_sorted["success_rate"], color="steelblue")
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=45, ha="right")
+    for penalty_name, group in df.groupby("penalty_set_name"):
+        group_sorted = group.sort_values("N")
+        ax.plot(
+            group_sorted["N"],
+            group_sorted["success_rate"],
+            marker="o",
+            label=penalty_name,
+        )
+    ax.set_xlabel("Board size N")
     ax.set_ylabel("Success rate")
-    ax.set_title("Penalty sensitivity (all N pooled)")
+    ax.set_ylim(0, 1.05)
+    ax.set_title("QUBO penalty sensitivity")
+    ax.legend()
     _save(fig, "qubo_penalties.png")
 
 

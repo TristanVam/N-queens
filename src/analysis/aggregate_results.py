@@ -10,24 +10,57 @@ logger = setup_logging(__name__)
 
 
 def aggregate_cp(df: pd.DataFrame) -> pd.DataFrame:
-    grouped = df.groupby(["model", "N"])
-    agg = grouped.agg(success_rate=("valid", "mean"), median_runtime=("runtime", "median")).reset_index()
+    rows = []
+    grouped = df.groupby(["model_name", "N"], dropna=False)
+    for (model, n), group in grouped:
+        successes = group[group["is_valid"]]
+        success_rate = len(successes) / len(group)
+        runtime_median_success = successes["runtime_s"].median() if not successes.empty else None
+        runtime_mean_success = successes["runtime_s"].mean() if not successes.empty else None
+        rows.append(
+            {
+                "model_name": model,
+                "N": n,
+                "success_rate": success_rate,
+                "runtime_median_success": runtime_median_success,
+                "runtime_mean_success": runtime_mean_success,
+            }
+        )
+    agg = pd.DataFrame(rows)
+
     max_rows = []
-    for model, group in agg.groupby("model"):
+    for model, group in agg.groupby("model_name"):
         solved = group[group["success_rate"] >= 1.0]
         max_n = solved["N"].max() if not solved.empty else None
-        max_rows.append({"model": model, "max_solved_N": max_n})
+        max_rows.append({"model_name": model, "N_max_at_100pct_success": max_n})
     max_df = pd.DataFrame(max_rows)
-    agg = agg.merge(max_df, on="model", how="left")
-    return agg
+    return agg.merge(max_df, on="model_name", how="left")
 
 
 def aggregate_qubo(df: pd.DataFrame) -> pd.DataFrame:
-    grouped = df.groupby(["N", "penalty_row", "penalty_col", "penalty_diag"])
-    agg = grouped.agg(success_rate=("valid", "mean"), median_energy=("energy", "median"), median_runtime=("runtime", "median")).reset_index()
+    rows = []
+    grouped = df.groupby(["N", "penalty_set_name", "penalty_values"], dropna=False)
+    for (n, penalty_name, penalty_values), group in grouped:
+        successes = group[group["is_valid"]]
+        success_rate = len(successes) / len(group)
+        runtime_median_success = successes["runtime_s"].median() if not successes.empty else None
+        runtime_mean_success = successes["runtime_s"].mean() if not successes.empty else None
+        energy_median = successes["energy"].median() if not successes.empty else None
+        rows.append(
+            {
+                "N": n,
+                "penalty_set_name": penalty_name,
+                "penalty_values": penalty_values,
+                "success_rate": success_rate,
+                "runtime_median_success": runtime_median_success,
+                "runtime_mean_success": runtime_mean_success,
+                "energy_median_success": energy_median,
+            }
+        )
+    agg = pd.DataFrame(rows)
     solved = agg[agg["success_rate"] >= 1.0]
     max_n = solved["N"].max() if not solved.empty else None
-    agg["max_solved_N"] = max_n
+    agg["N_max_at_100pct_success"] = max_n
     return agg
 
 
