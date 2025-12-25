@@ -1,10 +1,10 @@
 # N-Queens Course Project: CP vs QUBO
 
-This repository accompanies a university-style project that compares three N-Queens models built with course material only: two MiniZinc encodings (classic `alldifferent` over integers and a Boolean pseudo-Boolean variant) and a quadratic unconstrained binary optimization (QUBO) solved with the Fixstars Amplify annealing engine. The code is structured for reproducible experiments and lightweight reporting rather than marketing polish.
+This repository compares three N-Queens models: two MiniZinc encodings (classic `alldifferent` over integers and a Boolean pseudo-Boolean variant) and a quadratic unconstrained binary optimization (QUBO) solved with the Fixstars Amplify annealing engine. The code focuses on reproducible experiments and simple reporting.
 
 ## What we compare / what we measure
 - **Models**: classic CP with `alldifferent`, Boolean PB with row/column/diagonal counts, and a grid-based QUBO sent to Amplify.
-- **Metrics**: runtime, success rate (especially for the stochastic QUBO), and sensitivity to penalty weights in the QUBO formulation.
+- **Metrics**: runtime, success rate, and how sensitive the QUBO penalties are.
 - **Stochastic note**: QUBO runs are repeated per setting to capture variability.
 
 ## Repository structure
@@ -60,4 +60,4 @@ The script exercises both CP models, the validator (including a negative case), 
 ## Reproducibility notes
 - Experiment parameters (board sizes, timeouts, penalty weights, number of runs) live in `config.py`. Profiles let you switch between quick debugging and fuller benchmarks.
 - MiniZinc runs enforce per-call timeouts; QUBO runs respect Amplify timeouts and sample counts.
-- QUBO solutions are validated just like CP solutions; success rates summarize how often the annealer finds a legal placement.
+- QUBO solutions are validated like the CP solutions; success rates reflect how often the annealer finds a legal placement.

@@ -1,4 +1,4 @@
-"""Validation utilities for N-Queens solutions."""
+"""Validate N-Queens placements and summarize reasons."""
 from __future__ import annotations
 
 from collections import Counter
@@ -32,14 +32,7 @@ def _summary_from_flags(
 
 
 def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, object]:
-    """Validate an N-Queens placement.
-
-    Returns a dictionary with:
-    - ``valid``: boolean
-    - ``violations``: list of strings describing conflicts
-    - ``counts``: diagnostic counters
-    - ``reason_summary``: concise status tag for logging/CSV export
-    """
+    """Check board bounds, conflicts, and produce a concise summary."""
     if n <= 0:
         raise ValidationError("Board size must be positive")
 
@@ -83,6 +76,3 @@ def validate_solution(positions: List[Tuple[int, int]], n: int) -> Dict[str, obj
         },
         "reason_summary": reason_summary,
     }
-
-
-__all__ = ["validate_solution", "ValidationError"]

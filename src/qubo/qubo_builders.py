@@ -1,14 +1,7 @@
-"""QUBO model builders for the N-Queens problem using Fixstars Amplify.
+"""Build the grid-style QUBO for N-Queens.
 
-The formulation mirrors the Boolean PB grid: one binary variable per cell
-``x[r,c]`` taking value 1 when a queen is placed there. Constraints are added as
-quadratic penalties (no higher-order terms):
-
-- Rows: equality (exactly one queen per row).
-- Columns: equality. Because rows enforce N total queens, ``<= 1`` per column is
-  equivalent to ``= 1`` (pigeonhole principle), so we use ``= 1`` to simplify
-  the penalty expression.
-- Diagonals: pairwise ``<= 1`` conflicts.
+Rows and columns use equality; ``<= 1`` per column is equivalent by pigeonhole,
+and we stick with ``= 1`` to keep the penalties clear and stable in practice.
 """
 from __future__ import annotations
 
@@ -35,12 +28,7 @@ def generate_mapping(n: int) -> Tuple[List[Tuple[int, int]], Dict[Tuple[int, int
 def build_qubo(
     n: int, penalties: PenaltyConfig
 ) -> Tuple[BinaryQuadraticModel, List[Tuple[int, int]], list]:
-    """Construct a BinaryQuadraticModel for the N-Queens problem.
-
-    Variables ``x[i]`` correspond to the flattened grid of ``x[r,c]``. All
-    constraints are encoded as quadratic penalties scaled by the provided
-    ``penalties`` dictionary.
-    """
+    """Create the N-Queens BinaryQuadraticModel with penalty scaling."""
     idx_to_coord, coord_to_idx = generate_mapping(n)
     x = gen_symbols(BinaryQuadraticModelBuilder, n * n)
     bqm = BinaryQuadraticModel()
@@ -108,6 +96,3 @@ def _collect_diagonals(n: int) -> List[List[int]]:
         diag_map.setdefault(diag, []).append(idx)
         anti_diag_map.setdefault(anti, []).append(idx)
     return list(diag_map.values()) + list(anti_diag_map.values())
-
-
-__all__ = ["build_qubo", "generate_mapping", "PenaltyConfig"]

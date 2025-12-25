@@ -1,4 +1,4 @@
-"""Automated experiments for QUBO annealing using Fixstars Amplify."""
+"""Run QUBO experiments with Amplify and log CSV rows."""
 from __future__ import annotations
 
 from datetime import datetime
